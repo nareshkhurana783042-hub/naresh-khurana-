@@ -1628,10 +1628,23 @@ def add_posts(body: dict = Body(...)):
     clip = next((c for c in job["clips"] if c["id"] == body.get("clip")), None) if job else None
     if not clip or clip.get("status") != "done":
         raise HTTPException(404, "That clip is not ready")
-    made = posting.enqueue(job, clip, [str(a) for a in body.get("accounts", [])][:20], now=bool(body.get("now")))
+    due_at = body.get("due_at")
+    made = posting.enqueue(job, clip, [str(a) for a in body.get("accounts", [])][:20], now=bool(body.get("now")), due_at=due_at)
     if not made:
         raise HTTPException(400, "Nothing was queued. Pick at least one account this clip has not already gone to.")
     return {"queued": len(made)}
+
+
+@app.post("/api/posts/{pid}/reschedule")
+def post_reschedule(pid: str, body: dict = Body(...)):
+    due_at = body.get("due_at")
+    if not due_at:
+        raise HTTPException(400, "Valid due_at timestamp is required")
+    try:
+        posting.reschedule(pid, float(due_at))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"ok": True}
 
 
 @app.post("/api/posts/{pid}/{action}")
