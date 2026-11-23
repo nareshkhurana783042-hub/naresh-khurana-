@@ -7207,7 +7207,7 @@
           <button class="btn sm" data-act="writetext">Write again with AI</button></div>
         <label class="f">Title<input data-f="title" value="${esc(c.title)}"></label>
         <label class="f">Description<textarea data-f="description" rows="2">${esc(c.description)}</textarea></label>
-        <label class="f">Hashtags<input data-f="hashtags" value="${esc((c.hashtags || []).join(" "))}" placeholder="funny gaming clutch"></label>
+        <label class="f">Hashtags<input data-f="hashtags" value="${esc((c.hashtags || []).map(h => (h ? (h.startsWith('#') ? h : '#' + h) : '')).filter(Boolean).join(" "))}" placeholder="#funny #gaming #clutch"></label>
         <button class="btn" data-act="remake">${ic("scissors")}Save and re-make clip</button>
         <h3>Post it</h3>
         <div id="dposts" class="row" style="gap:4px"></div>
