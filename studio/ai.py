@@ -139,6 +139,7 @@ def save(provider_id: str, model_ids, address: str = "", new_key=None) -> dict:
             pass
         tmp.replace(f)
         _saved["at"] = None
+    clear_problem()
     return public()
 
 
@@ -182,6 +183,7 @@ def test() -> dict:
     if not ready():
         raise ValueError("Save a service, a model and a key first.")
     out, sent, wrote = call(ms[0], 'Answer with a JSON array that holds the single string "ok".', {"type": "ARRAY", "items": {"type": "STRING"}})
+    clear_problem()
     return {"ok": True, "model": ms[0], "tokens": sent + wrote, "answer": str(out)[:80]}
 
 
@@ -228,6 +230,11 @@ def note_problem(e):
 
 def clear_problem():
     problem.update(text="", at=0.0)
+    try:
+        from . import usage
+        usage._brief.clear()
+    except Exception:
+        pass
 
 
 def asked_wait(r) -> float | None:
@@ -330,7 +337,9 @@ def call(model: str, prompt: str, schema: dict, timeout: float | None = None):
     `timeout` is how long one answer may take. A live stream passes a short one, because a slow
     answer must not stop the recording."""
     how = PROVIDERS[provider()][2]
-    return {"gemini": _gemini, "openai": _openai, "anthropic": _anthropic}[how](model, prompt, schema, timeout)
+    out = {"gemini": _gemini, "openai": _openai, "anthropic": _anthropic}[how](model, prompt, schema, timeout)
+    clear_problem()
+    return out
 
 
 def see(prompt: str, image: bytes, timeout: float | None = None) -> tuple[str, int, int]:
