@@ -4,6 +4,8 @@ import json
 import re
 import subprocess
 import time
+import urllib.request
+import urllib.parse
 from pathlib import Path
 
 import numpy as np
@@ -104,25 +106,9 @@ def cookie_opts() -> dict:
 def _ydl(opts):
     import yt_dlp
     # a channel or playlist link is answered as "a list" straight away, never walked video by video
-    base = {
-        "noplaylist": True,
-        "quiet": True,
-        "no_warnings": True,
-        "logger": _Quiet(),
-        "extract_flat": "in_playlist",
-        "playlistend": 1,
-        "socket_timeout": 20,
-        "concurrent_fragment_downloads": 4,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android", "ios", "mweb", "web"],
-                "player_skip": ["webpage", "configs"],
-            }
-        },
-        **cookie_opts(),
-        **opts,
-    }
-    return yt_dlp.YoutubeDL(base)
+    return yt_dlp.YoutubeDL({"noplaylist": True, "quiet": True, "no_warnings": True, "logger": _Quiet(),
+                             "extract_flat": "in_playlist", "playlistend": 1, "socket_timeout": 20,
+                             "concurrent_fragment_downloads": 4, **cookie_opts(), **opts})
 
 
 def _video_format(height):
@@ -137,13 +123,106 @@ def _biggest(job_dir: Path, stem: str) -> Path:
     return files[0]
 
 
+def _youtube_id(url: str) -> str:
+    m = re.search(r'(?:v=|\/|be\/|shorts\/|embed\/)([A-Za-z0-9_-]{11})', url or "")
+    return m.group(1) if m else ""
+
+
+PIPED_INSTANCES = [
+    "https://api.piped.private.coffee",
+    "https://pipedapi.tokhmi.xyz",
+    "https://pipedapi.leptons.xyz",
+]
+
+
+def _youtube_fallback_info(url: str) -> dict:
+    vid = _youtube_id(url)
+    if not vid:
+        raise ValueError("Could not parse YouTube video ID.")
+    title, uploader, thumbnail, duration = "", "", f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg", 0.0
+    try:
+        req = urllib.request.Request(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={vid}&format=json",
+                                     headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode())
+            title = data.get("title") or ""
+            uploader = data.get("author_name") or ""
+            if data.get("thumbnail_url"):
+                thumbnail = data["thumbnail_url"]
+    except Exception:
+        pass
+    try:
+        req = urllib.request.Request(f"https://www.youtube.com/watch?v={vid}",
+                                     headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+            dur_m = re.search(r'"approxDurationMs":"(\d+)"', html)
+            if dur_m:
+                duration = float(dur_m.group(1)) / 1000.0
+            if not title:
+                t_m = re.search(r'<title>(.+?) - YouTube</title>', html)
+                if t_m:
+                    title = t_m.group(1)
+    except Exception:
+        pass
+    if duration <= 0 or not title:
+        for inst in PIPED_INSTANCES:
+            try:
+                req = urllib.request.Request(f"{inst}/streams/{vid}", headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=6) as resp:
+                    pdata = json.loads(resp.read().decode())
+                    if not title:
+                        title = pdata.get("title") or ""
+                    if not uploader:
+                        uploader = pdata.get("uploader") or ""
+                    if duration <= 0:
+                        duration = float(pdata.get("duration") or 0)
+                    break
+            except Exception:
+                continue
+    return {
+        "title": title or f"YouTube Video ({vid})",
+        "uploader": uploader or "YouTube Creator",
+        "duration": duration,
+        "is_live": False,
+        "thumbnail": thumbnail,
+        "kind": "video"
+    }
+
+
+def _youtube_stream_url(url: str):
+    vid = _youtube_id(url)
+    if not vid:
+        return None
+    for inst in PIPED_INSTANCES:
+        try:
+            req = urllib.request.Request(f"{inst}/streams/{vid}", headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+                streams = data.get("videoStreams", []) + data.get("audioStreams", [])
+                for s in streams:
+                    if s.get("url"):
+                        return s["url"]
+        except Exception:
+            continue
+    return None
+
+
 def info(url: str) -> dict:
     """Title, channel and length, without downloading anything."""
-    with _youtube_guard(url), _ydl({}) as ydl:
-        i = ydl.extract_info(url, download=False)
-    return {"title": i.get("title") or "", "uploader": i.get("uploader") or i.get("channel") or "",
-            "duration": float(i.get("duration") or 0), "is_live": bool(i.get("is_live")),
-            "thumbnail": i.get("thumbnail") or "", "kind": i.get("_type") or "video"}
+    try:
+        with _youtube_guard(url), _ydl({}) as ydl:
+            i = ydl.extract_info(url, download=False)
+        return {"title": i.get("title") or "", "uploader": i.get("uploader") or i.get("channel") or "",
+                "duration": float(i.get("duration") or 0), "is_live": bool(i.get("is_live")),
+                "thumbnail": i.get("thumbnail") or "", "kind": i.get("_type") or "video"}
+    except Exception:
+        if is_youtube(url):
+            try:
+                return _youtube_fallback_info(url)
+            except Exception:
+                pass
+        raise
 
 
 def youtube_words(url: str):
@@ -151,21 +230,23 @@ def youtube_words(url: str):
     has none. Only the transcript in the language that was spoken is used, never a translation."""
     if not is_youtube(url):
         return None
-    import json
-    with _youtube_guard(url), _ydl({}) as ydl:
-        i = ydl.extract_info(url, download=False)
-        auto = i.get("automatic_captions") or {}
-        lang = str(i.get("language") or "").strip().lower()
-        base = lang.split("-")[0] if lang else ""
-        candidates = [f"{lang}-orig", lang, f"{base}-orig", base]
-        key = next((c for c in candidates if c and c in auto), None)
-        if not key:
-            key = next((k for k in auto if k.endswith("-orig")), None)
-        track = next((f for f in auto.get(key) or [] if f.get("ext") == "json3" and f.get("url")), None) if key else None
-        if not track:
-            return None
-        raw = ydl.urlopen(track["url"]).read(40_000_000)
-    return _caption_words(json.loads(raw)), key.replace("-orig", "")
+    try:
+        with _youtube_guard(url), _ydl({}) as ydl:
+            i = ydl.extract_info(url, download=False)
+            auto = i.get("automatic_captions") or {}
+            lang = str(i.get("language") or "").strip().lower()
+            base = lang.split("-")[0] if lang else ""
+            candidates = [f"{lang}-orig", lang, f"{base}-orig", base]
+            key = next((c for c in candidates if c and c in auto), None)
+            if not key:
+                key = next((k for k in auto if k.endswith("-orig")), None)
+            track = next((f for f in auto.get(key) or [] if f.get("ext") == "json3" and f.get("url")), None) if key else None
+            if not track:
+                return None
+            raw = ydl.urlopen(track["url"]).read(40_000_000)
+        return _caption_words(json.loads(raw)), key.replace("-orig", "")
+    except Exception:
+        return None
 
 
 def youtube_english_words(url: str):
@@ -274,18 +355,46 @@ def download_audio(url: str, job_dir: Path, on_progress=None) -> Path:
         if on_progress and d.get("status") == "downloading" and total:
             on_progress(d.get("downloaded_bytes", 0) / total)
 
-    with _youtube_guard(url), _ydl({"format": "ba[ext=m4a]/ba/worst", "outtmpl": str(job_dir / "audio_src.%(ext)s"),
-               "progress_hooks": [hook]}) as ydl:
-        ydl.download([url])
-    return _biggest(job_dir, "audio_src")
+    try:
+        with _youtube_guard(url), _ydl({"format": "ba[ext=m4a]/ba/worst", "outtmpl": str(job_dir / "audio_src.%(ext)s"),
+                   "progress_hooks": [hook]}) as ydl:
+            ydl.download([url])
+        return _biggest(job_dir, "audio_src")
+    except Exception:
+        if is_youtube(url):
+            stream_url = _youtube_stream_url(url)
+            if stream_url:
+                out_file = job_dir / "audio_src.m4a"
+                try:
+                    run(["ffmpeg", "-y", "-headers", "User-Agent: Mozilla/5.0\r\n", "-i", stream_url,
+                         "-vn", "-acodec", "copy", str(out_file)])
+                except Exception:
+                    pass
+                if not out_file.is_file() or out_file.stat().st_size == 0:
+                    run(["ffmpeg", "-y", "-headers", "User-Agent: Mozilla/5.0\r\n", "-i", stream_url,
+                         "-vn", "-acodec", "aac", str(out_file)])
+                if out_file.is_file() and out_file.stat().st_size > 0:
+                    return out_file
+        raise
 
 
 def download(url: str, job_dir: Path, height=720) -> Path:
     """The whole video. Used for shorter videos, where this is quicker than fetching pieces."""
-    with _youtube_guard(url), _ydl({"format": _video_format(height), "merge_output_format": "mp4",
-                                    "outtmpl": str(job_dir / "source.%(ext)s")}) as ydl:
-        ydl.download([url])
-    return _biggest(job_dir, "source")
+    try:
+        with _youtube_guard(url), _ydl({"format": _video_format(height), "merge_output_format": "mp4",
+                                        "outtmpl": str(job_dir / "source.%(ext)s")}) as ydl:
+            ydl.download([url])
+        return _biggest(job_dir, "source")
+    except Exception:
+        if is_youtube(url):
+            stream_url = _youtube_stream_url(url)
+            if stream_url:
+                out_file = job_dir / "source.mp4"
+                run(["ffmpeg", "-y", "-headers", "User-Agent: Mozilla/5.0\r\n", "-i", stream_url,
+                     "-c", "copy", str(out_file)])
+                if out_file.is_file() and out_file.stat().st_size > 0:
+                    return out_file
+        raise
 
 
 def download_section(url: str, out_dir: Path, stem: str, start: float, end: float, height=720, exact=False) -> Path:
@@ -297,9 +406,21 @@ def download_section(url: str, out_dir: Path, stem: str, start: float, end: floa
             "download_ranges": download_range_func(None, [(max(0.0, start), end)])}
     if exact:
         opts["force_keyframes_at_cuts"] = True
-    with _youtube_guard(url), _ydl(opts) as ydl:
-        ydl.download([url])
-    return _biggest(out_dir, stem)
+    try:
+        with _youtube_guard(url), _ydl(opts) as ydl:
+            ydl.download([url])
+        return _biggest(out_dir, stem)
+    except Exception:
+        if is_youtube(url):
+            stream_url = _youtube_stream_url(url)
+            if stream_url:
+                out_file = out_dir / f"{stem}.mp4"
+                run(["ffmpeg", "-y", "-headers", "User-Agent: Mozilla/5.0\r\n",
+                     "-ss", f"{max(0.0, start):.2f}", "-to", f"{end:.2f}",
+                     "-i", stream_url, "-c", "copy", str(out_file)])
+                if out_file.is_file() and out_file.stat().st_size > 0:
+                    return out_file
+        raise
 
 
 def find_offset(full: np.ndarray, part: np.ndarray, expected: float, search=20.0) -> float:
