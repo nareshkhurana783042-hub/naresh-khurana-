@@ -7,11 +7,20 @@ RUN apt-get update \
 # yt-dlp needs a JavaScript runtime for YouTube
 COPY --from=denoland/deno:bin /deno /usr/local/bin/deno
 
+# Set up user for Hugging Face Spaces (UID 1000)
+RUN useradd -m -u 1000 user && \
+    mkdir -p /data /app && \
+    chown -R user:user /data /app
+
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY studio studio
 COPY web web
+
+RUN chown -R user:user /app
+
+USER user
 
 ENV PEAKCUT_DATA=/data \
     PEAKCUT_HOST=0.0.0.0 \
