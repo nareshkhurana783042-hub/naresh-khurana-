@@ -2,33 +2,110 @@
 <html lang="en">
 
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Clipper by Naresh Khurana</title>
-<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg?v=neonpurple">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@300&family=Archivo+Black&family=Anton&family=Poppins:wght@800&display=swap" rel="stylesheet">
-<style>
-:root{
-  --brand:#8B5CF6;--brand-press:#7C3AED;--brand-ink:#FFFFFF;--brand-soft:#F5F3FF;--brand-line:#DDD6FE;--brand-deep:#5B21B6;
-  --frame:#0B0813;--frame-2:#151022;--frame-line:rgba(255,255,255,.08);--frame-text:#F4EEEA;--frame-dim:#A99A91;
-  --bg:#FFFFFF;--muted:#F7F4F1;--line:#EEE8E4;--line-2:#E1D9D3;
-  --text:#211813;--dim:#6D6159;--faint:#A0948C;
-  --good:#0F8A57;--good-soft:#E6F6EE;--bad:#D3343F;--bad-soft:#FDECEE;--live:#E5323F;
-  --r-lg:16px;--r:12px;--r-sm:8px;
-  color-scheme:light;
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{height:100%}
-body{margin:0;background:var(--frame);color:var(--text);font:14px/1.5 "Geist","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
-h1,h2,h3,h4,p{margin:0}
-button,input,select,textarea{font:inherit;color:inherit}
-svg{width:18px;height:18px;flex:none;fill:currentColor}
-::selection{background:var(--brand-line)}
-:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#E2D9D7;border-radius:999px;border:3px solid #fff}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clipper by Naresh Khurana</title>
+  <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg?v=neonpurple">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@300&family=Archivo+Black&family=Anton&family=Poppins:wght@800&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --brand: #8B5CF6;
+      --brand-press: #7C3AED;
+      --brand-ink: #FFFFFF;
+      --brand-soft: #F5F3FF;
+      --brand-line: #DDD6FE;
+      --brand-deep: #5B21B6;
+      --frame: #0B0813;
+      --frame-2: #151022;
+      --frame-line: rgba(255, 255, 255, .08);
+      --frame-text: #F4EEEA;
+      --frame-dim: #A99A91;
+      --bg: #FFFFFF;
+      --muted: #F7F4F1;
+      --line: #EEE8E4;
+      --line-2: #E1D9D3;
+      --text: #211813;
+      --dim: #6D6159;
+      --faint: #A0948C;
+      --good: #0F8A57;
+      --good-soft: #E6F6EE;
+      --bad: #D3343F;
+      --bad-soft: #FDECEE;
+      --live: #E5323F;
+      --r-lg: 16px;
+      --r: 12px;
+      --r-sm: 8px;
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      background: var(--frame);
+      color: var(--text);
+      font: 14px/1.5 "Geist", "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    p {
+      margin: 0
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: inherit
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      fill: currentColor
+    }
+
+    ::selection {
+      background: var(--brand-line)
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #E2D9D7;
+      border-radius: 999px;
+      border: 3px solid #fff
+    }
 
     * {
       box-sizing: border-box
@@ -5658,28 +5735,38 @@ svg{width:18px;height:18px;flex:none;fill:currentColor}
 </head>
 
 <body>
-<div class="app" id="app">
-  <aside class="side" aria-label="Sidebar">
-    <div class="side-head"><img class="logo" src="/brand/logo-light.svg?v=neonpurple" alt="Clipper by Naresh Khurana"><img class="mark" src="/brand/favicon.svg?v=neonpurple" alt="Clipper by Naresh Khurana">
-      <button class="icon-btn collapse" data-act="collapse" id="collapseBtn" aria-label="Collapse sidebar"></button></div>
-    <nav class="nav" id="nav" aria-label="Main"></nav>
-    <div class="side-foot" id="foot"></div>
-  </aside>
-  <div class="scrim" data-act="menu"></div>
-  <main id="main">
-    <header class="topbar"><button class="icon-btn menu" data-act="menu" id="menuBtn" aria-label="Open menu"></button>
-      <span id="tpic"></span><div class="titles"><h1 id="title"></h1><p id="subtitle"></p></div><nav class="utabs" id="utabs" role="tablist" aria-label="Creator sections"></nav><div class="row" id="actions"></div></header>
-    <div id="vbanner"></div>
-    <div id="heroSlot"></div>
-    <div class="content" id="view"></div>
-  </main>
-</div>
-<dialog id="clipdlg"></dialog>
-<dialog id="formdlg"></dialog>
-<input type="file" id="file" accept="video/*" multiple hidden>
-<div id="toasts" role="status" aria-live="polite"></div>
-<div class="pop" id="bellpop" role="dialog" aria-label="Notifications" hidden></div>
-<div class="pop menu" id="acctpop" role="menu" hidden></div>
+  <div class="app" id="app">
+    <aside class="side" aria-label="Sidebar">
+      <div class="side-head"><img class="logo" src="/brand/logo-light.svg?v=neonpurple"
+          alt="Clipper by Naresh Khurana"><img class="mark" src="/brand/favicon.svg?v=neonpurple"
+          alt="Clipper by Naresh Khurana">
+        <button class="icon-btn collapse" data-act="collapse" id="collapseBtn" aria-label="Collapse sidebar"></button>
+      </div>
+      <nav class="nav" id="nav" aria-label="Main"></nav>
+      <div class="side-foot" id="foot"></div>
+    </aside>
+    <div class="scrim" data-act="menu"></div>
+    <main id="main">
+      <header class="topbar"><button class="icon-btn menu" data-act="menu" id="menuBtn" aria-label="Open menu"></button>
+        <span id="tpic"></span>
+        <div class="titles">
+          <h1 id="title"></h1>
+          <p id="subtitle"></p>
+        </div>
+        <nav class="utabs" id="utabs" role="tablist" aria-label="Creator sections"></nav>
+        <div class="row" id="actions"></div>
+      </header>
+      <div id="vbanner"></div>
+      <div id="heroSlot"></div>
+      <div class="content" id="view"></div>
+    </main>
+  </div>
+  <dialog id="clipdlg"></dialog>
+  <dialog id="formdlg"></dialog>
+  <input type="file" id="file" accept="video/*" multiple hidden>
+  <div id="toasts" role="status" aria-live="polite"></div>
+  <div class="pop" id="bellpop" role="dialog" aria-label="Notifications" hidden></div>
+  <div class="pop menu" id="acctpop" role="menu" hidden></div>
 
   <script src="/assets/gradient-ascii.js"></script>
   <script>
@@ -6884,7 +6971,7 @@ svg{width:18px;height:18px;flex:none;fill:currentColor}
         <button class="btn ${o.paused ? "primary" : ""}" data-act="pause">${ic(o.paused ? "play" : "pause")}${o.paused ? "Resume posting" : "Pause all posting"}</button></div>
       ${o.posts.length ? `<div class="scroll"><table class="stack"><tr><th>When</th><th>Clip</th><th>Creator</th><th>Account</th><th class="num">Views</th><th></th></tr>
       ${o.posts.map(p => `<tr><td data-l="Status">${pst(p)}</td><td data-l="Clip" class="c-main">${p.url ? `<a class="lnk" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)}${p.error ? `<div class="err" style="margin:2px 0 0">${esc(p.error)}</div>` : ""}</td><td data-l="Creator">${esc(p.creator_name || "None")}</td><td data-l="Account">${esc(p.account_name)}</td><td data-l="Views" class="num">${p.views ?? "–"}</td>
-        <td class="c-act" style="text-align:right">${p.status === "scheduled" ? `<button class="btn sm" data-act="pcancel" data-id="${p.id}">Cancel</button>` : p.status === "failed" ? `<button class="btn sm" data-act="pretry" data-id="${p.id}">Retry</button>` : ""}</td></tr>`).join("")}</table></div>`
+        <td class="c-act" style="text-align:right">${p.status === "scheduled" ? `<button class="btn sm" data-act="preschedule" data-id="${p.id}" data-due="${p.due_at}">Change time</button><button class="btn sm" data-act="pcancel" data-id="${p.id}">Cancel</button>` : p.status === "failed" ? `<button class="btn sm" data-act="pretry" data-id="${p.id}">Retry</button>` : ""}</td></tr>`).join("")}</table></div>`
           : `<p class="help">Nothing queued or posted yet.</p>`}</div>`);
     }
 
@@ -7125,7 +7212,7 @@ svg{width:18px;height:18px;flex:none;fill:currentColor}
         <h3>Post it</h3>
         <div id="dposts" class="row" style="gap:4px"></div>
         ${S.accounts.length ? `<div class="row">${S.accounts.map(a => `<label class="ck"><input type="checkbox" data-pacc value="${esc(a.id)}">${esc(a.label)} · ${esc(a.name)}</label>`).join("")}</div>
-          <div class="row"><button class="btn primary" data-act="postnow">${ic("send")}Post now</button><button class="btn" data-act="postqueue">Add to queue</button></div>`
+          <div class="row" style="align-items:flex-end;gap:10px;margin-top:8px;background:var(--bg-2,#f8f9fa);padding:10px 12px;border-radius:8px;border:1px solid var(--line,#e9ecef)"><label class="f" style="margin:0;flex:1"><span style="font-size:12px;font-weight:600;margin-bottom:4px;display:block">Schedule time (Apna custom date & time chuno):</span><input type="datetime-local" data-pschedule-time style="font-size:13px;padding:6px 8px"></label><button class="btn" data-act="postcustom" style="white-space:nowrap">${ic("clock")}Schedule at selected time</button></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn primary" data-act="postnow">${ic("send")}Post now</button><button class="btn ghost" data-act="postqueue">Auto queue (next slot)</button></div>`
             : `<p class="help">No accounts connected yet. Connect one in Settings.</p>`}
         <div class="row" style="margin-top:auto;padding-top:8px;border-top:1px solid var(--line)">
           ${c.status === "done" ? `<a class="btn" href="${m}${esc(c.file)}?download=1">${ic("down")}Download</a>` : ""}
@@ -7474,13 +7561,33 @@ svg{width:18px;height:18px;flex:none;fill:currentColor}
             return toast("New post text written. Read it over: it is saved when you post.", "ok");
           } finally { b.disabled = false; b.textContent = was; }
         }
-        if (a === "postnow" || a === "postqueue") {
+        if (a === "postnow" || a === "postqueue" || a === "postcustom") {
           const accs = $$("#clipdlg [data-pacc]:checked").map(i => i.value);
           if (!accs.length) return toast("Tick at least one account first.", "bad");
+          let due_at = null;
+          if (a === "postcustom") {
+            const timeVal = $("#clipdlg [data-pschedule-time]")?.value;
+            if (!timeVal) return toast("Pehle date aur time select karein.", "bad");
+            due_at = Math.floor(new Date(timeVal).getTime() / 1000);
+            if (isNaN(due_at) || due_at < Math.floor(Date.now() / 1000)) {
+              return toast("Aane wala (future) time select karein.", "bad");
+            }
+          }
           if (a === "postnow" && !await ask("Post now?", `This clip goes to ${accs.length} account${accs.length > 1 ? "s" : ""} straight away.`, "Post now")) return;
-          await send(`/api/jobs/${D.jid}/clips/${D.cid}/text`, postText(), "PUT");   // the text as it is in the boxes now
-          await send("/api/posts", { job: D.jid, clip: D.cid, accounts: accs, now: a === "postnow" });
-          toast(a === "postnow" ? "Posting now" : "Added to the queue", "ok"); return tick();
+          await send(`/api/jobs/${D.jid}/clips/${D.cid}/text`, postText(), "PUT");
+          await send("/api/posts", { job: D.jid, clip: D.cid, accounts: accs, now: a === "postnow", due_at: due_at });
+          toast(a === "postnow" ? "Posting now" : a === "postcustom" ? "Video scheduled at your selected time!" : "Added to the queue", "ok"); return tick();
+        }
+        if (a === "preschedule") {
+          const curDue = Number(d.due);
+          const dObj = curDue ? new Date(curDue * 1000) : new Date(Date.now() + 3600000);
+          const defStr = new Date(dObj.getTime() - dObj.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          const val = prompt("Enter new schedule date & time (YYYY-MM-DD HH:MM):", defStr.replace("T", " "));
+          if (!val) return;
+          const newTs = Math.floor(new Date(val.trim().replace(" ", "T")).getTime() / 1000);
+          if (isNaN(newTs) || newTs < Math.floor(Date.now() / 1000)) return toast("Please enter a valid future date & time", "bad");
+          await api(`/api/posts/${d.id}/reschedule`, { method: "POST", body: JSON.stringify({ due_at: newTs }), headers: { "Content-Type": "application/json" } });
+          toast("Schedule time updated!", "ok"); return loadOverview();
         }
       } catch (err) { b.disabled = false; toast(err.message, "bad"); }
     });
@@ -7510,7 +7617,7 @@ svg{width:18px;height:18px;flex:none;fill:currentColor}
       checkNew(true);
       setInterval(async () => { try { S.status = await api("/api/status"); drawShell(); if (S.view === "overview") drawOverview(); checkNew(); } catch { } }, 15000);
     })();
-    try { localStorage.removeItem('clipper_preview_theme'); } catch {}
+    try { localStorage.removeItem('clipper_preview_theme'); } catch { }
   </script>
 </body>
 
