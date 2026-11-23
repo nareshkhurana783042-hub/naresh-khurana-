@@ -1,4 +1,14 @@
-# PeakCut
+---
+title: Clipper By Naresh Khurana
+emoji: ✂️
+colorFrom: purple
+colorTo: indigo
+sdk: docker
+app_port: 8765
+pinned: false
+---
+
+# Clipper by Naresh Khurana
 
 Turn long videos and live streams into captioned vertical clips, ready to post. Free and open source: run it on
 your own computer or server, with your own AI key.
