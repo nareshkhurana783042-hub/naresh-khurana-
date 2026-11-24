@@ -390,6 +390,15 @@ def request_render(jid, cid, changes: dict):
     for k in ("hook", "title", "description", "style", "layout"):
         if k in changes:
             new[k] = str(changes[k])[:{"hook": 60, "title": 100, "description": 2000}.get(k, 20)]
+    for k in ("facecam", "gameplay_crop"):
+        if k in changes and isinstance(changes[k], (list, tuple)) and len(changes[k]) == 4:
+            try:
+                new[k] = [int(round(float(v))) for v in changes[k]]
+            except (ValueError, TypeError):
+                pass
+    for k in ("split_mode", "pip_pos"):
+        if k in changes and changes[k]:
+            new[k] = str(changes[k])[:20]
     if "hashtags" in changes:
         new["hashtags"] = clean_hashtags(changes["hashtags"])
     if new.get("style") not in render.STYLES:
