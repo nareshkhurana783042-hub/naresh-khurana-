@@ -396,7 +396,7 @@ def request_render(jid, cid, changes: dict):
                 new[k] = [int(round(float(v))) for v in changes[k]]
             except (ValueError, TypeError):
                 pass
-    for k in ("split_mode", "pip_pos"):
+    for k in ("split_mode", "pip_pos", "enhance"):
         if k in changes and changes[k]:
             new[k] = str(changes[k])[:20]
     if "hashtags" in changes:
