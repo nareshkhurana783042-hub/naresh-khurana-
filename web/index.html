@@ -1428,6 +1428,7 @@ function drawAdd(variant) {
 }
 const LAYOUT_SHORT = {blur:"Blurred fill", zoom:"Zoomed in", crop:"Fill screen", left:"Keep left", right:"Keep right", fit:"Black bars", split:"Split screen", gameplay:"Gameplay + facecam"};
 const ENHANCE_PRESETS = {vibrant:"Viral Vivid (Sharpen + Vivid Colors)", gaming:"Gaming Boost (Ultra Sharp & High Vibrance)", cinematic:"Cinematic (Contrast & Depth)", clean:"Clean Polish (Gentle Sharpen)", off:"Original (Raw Video, No Filter)"};
+const BGM_PRESETS = {off:"Off (No Music, Voice Only)", phonk:"⚡ Phonk Energy Beat (Gaming)", lofi:"🎷 Lo-Fi Chill Beat (Vibe)", suspense:"🕵️ Dramatic Suspense (Tension)"};
 /* The language spoken in the video picks which speech model writes the transcript. Languages other than English
    need their model downloaded once (Settings → Speech models). */
 const LANG_NATIVE = {ar:"العربية"};
@@ -2246,9 +2247,12 @@ function drawClipDlg(full) {
         <h3>On the video</h3>
         <label class="f">Big text<input data-f="hook" value="${esc(c.hook)}"></label>
         <label class="sw"><input type="checkbox" data-f="captions" data-caption-toggle ${c.captions === false ? "" : "checked"}>Generate captions</label>
+        <div class="two"><label class="sw"><input type="checkbox" data-f="emojis" ${c.emojis === false ? "" : "checked"}>Auto Emojis in Captions (🔥 💰)</label>
+          <label class="sw"><input type="checkbox" data-f="progress_bar" ${c.progress_bar === false ? "" : "checked"}>Animated Progress Bar (प्रोग्रेस बार)</label></div>
         <div class="two"><label class="f">Caption style<select data-f="style" data-caption-style ${c.captions === false ? "disabled" : ""}>${opts(S.status.styles, c.style)}</select></label>
           <label class="f">Layout<select data-f="layout">${opts(S.status.layouts, c.layout)}</select></label></div>
-        <label class="f">Video Clarity & Colors (शार्पनेस और कलर्स)<select data-f="enhance">${opts(ENHANCE_PRESETS, c.enhance || "vibrant")}</select></label>
+        <div class="two"><label class="f">Video Clarity & Colors<select data-f="enhance">${opts(ENHANCE_PRESETS, c.enhance || "vibrant")}</select></label>
+          <label class="f">Background Music (BGM)<select data-f="bgm">${opts(BGM_PRESETS, c.bgm || "off")}</select></label></div>
         <div style="margin:2px 0 10px 0"><button type="button" class="btn sm" data-act="opencrop" style="width:100%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:6px;box-shadow:0 2px 6px rgba(79,70,229,0.3)">${ic("crop")}Customize Framing / Cam & Game (कस्टम फ्रेम)</button></div>
         <div class="two"><label class="f">Start (seconds)<input data-f="start" type="number" step="0.5" value="${c.start}"></label>
           <label class="f">End (seconds)<input data-f="end" type="number" step="0.5" value="${c.end}"></label></div>
