@@ -7552,6 +7552,22 @@
           });
           await send(`/api/jobs/${D.jid}/clips/${D.cid}/render`, body); toast("Re-making the clip…", "ok"); return tick();
         }
+        if (a === "makethumb") {
+          b.disabled = true; const was = b.textContent; b.textContent = "Designing…";
+          try {
+            const r = await send(`/api/jobs/${D.jid}/clips/${D.cid}/thumbnail`, {
+              headline: $(`#clipdlg [data-f="title"]`)?.value || "",
+              badge: $(`#clipdlg [data-f="hook"]`)?.value || "WAIT FOR IT"
+            });
+            const img = $("#clipdlg img[alt='Thumbnail']");
+            if (img) img.src = `/media/${D.jid}/${r.cover}?v=${r.version}`;
+            toast("Viral AI thumbnail generated!", "ok");
+            return tick();
+          } catch (err) {
+            toast(err.message, "bad");
+          } finally { b.disabled = false; b.textContent = was; }
+          return;
+        }
         if (a === "writetext") {
           b.disabled = true; const was = b.textContent; b.textContent = "Writing…";
           try {
