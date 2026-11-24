@@ -313,6 +313,22 @@ def _filter(layout, fg_h, facecam=None, gameplay=None, split_mode="cam_top", pip
             f"[bg][fg]overlay=0:(H-h)/2,setsar=1[v0];")
 
 
+ENHANCE_FILTERS = {
+    "vibrant": "unsharp=5:5:0.85:5:5:0.0,eq=contrast=1.08:saturation=1.18:brightness=0.01",
+    "gaming": "unsharp=5:5:1.1:5:5:0.0,eq=contrast=1.10:saturation=1.24:brightness=0.02",
+    "cinematic": "unsharp=5:5:0.75:5:5:0.0,eq=contrast=1.12:saturation=1.08:brightness=-0.01",
+    "clean": "unsharp=5:5:0.5:5:5:0.0,eq=contrast=1.03:saturation=1.06",
+    "off": ""
+}
+ENHANCE_PRESETS = {
+    "vibrant": "Viral Vivid (Sharpen + Vivid Colors)",
+    "gaming": "Gaming Boost (Ultra Sharp & High Vibrance)",
+    "cinematic": "Cinematic (Contrast & Clarity)",
+    "clean": "Clean Polish (Gentle Sharpen)",
+    "off": "Original (Raw Video)"
+}
+
+
 def _hook_y(layout, hook_y, facecam=None, pip_pos="top_right"):
     """Where the heading goes. In the gameplay layout the webcam sits in the top corner, so a heading
     across the top would run under it: it goes just below the picture instead."""
@@ -336,6 +352,7 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
     split_mode = clip.get("split_mode", "cam_top")
     pip_pos = clip.get("pip_pos", "top_right")
     hook = clip.get("hook", "")
+    enhance = clip.get("enhance", "vibrant")
     if layout == "gameplay" and not (face and len(face) == 4):
         layout = "crop"     # no webcam found: the game fills the screen, which is still the right shape
     hook_y = _hook_y(layout, hook_y, face, pip_pos)
@@ -350,19 +367,23 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
         # The title and description are also written into the file itself, for any place that reads them from it.
         meta = {"title": clip.get("title") or "", "description": clip.get("description") or "", "comment": clip.get("description") or ""}
         return _render_in(work, src, out_dir, name, start, end, layout, fg_h, ass,
-                          face=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos, meta=meta, hook=hook)
+                          face=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos, meta=meta, hook=hook, enhance=enhance)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
 def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layout, fg_h, ass: str,
-               face=None, gameplay=None, split_mode="cam_top", pip_pos="top_right", meta=None, hook="") -> dict:
+               face=None, gameplay=None, split_mode="cam_top", pip_pos="top_right", meta=None, hook="", enhance="vibrant") -> dict:
     global _qsv_ok
     (work / f"{name}.ass").write_text(ass, encoding="utf-8")
     (work / "f").mkdir()
     for f in config.FONTS_DIR.glob("*.ttf"):
         shutil.copyfile(f, work / "f" / f.name)
-    fc = _filter(layout, fg_h, facecam=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos) + f"[v0]ass={name}.ass:fontsdir=f[v]"
+    enh_filter = ENHANCE_FILTERS.get(enhance, "")
+    if enh_filter:
+        fc = _filter(layout, fg_h, facecam=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos) + f"[v0]{enh_filter}[ve];[ve]ass={name}.ass:fontsdir=f[v]"
+    else:
+        fc = _filter(layout, fg_h, facecam=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos) + f"[v0]ass={name}.ass:fontsdir=f[v]"
     base = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src),
             "-filter_complex", fc, "-map", "[v]", "-map", "0:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
             "-c:a", "aac", "-b:a", "160k", "-ar", "48000"]
@@ -397,4 +418,4 @@ def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layo
         pass
     for ext in ("mp4", "jpg", "ass"):
         shutil.move(str(work / f"{name}.{ext}"), str(out_dir / f"{name}.{ext}"))
-    return {"file": f"{name}.mp4", "cover": f"{name}.jpg", "layout": layout}
+    return {"file": f"{name}.mp4", "cover": f"{name}.jpg", "layout": layout, "enhance": enhance}
