@@ -163,7 +163,31 @@ def _hook_events(hook, dur, y):
     return ev
 
 
-def build_ass(words, start, end, hook, style_name, highlight, hook_y, cap_y) -> str:
+EMOJI_MAP = {
+    "money": "💰", "cash": "💵", "dollar": "💵", "dollars": "💵", "rich": "🤑", "million": "💰", "billion": "💰", "pay": "💳", "buy": "🛍️",
+    "fire": "🔥", "lit": "🔥", "insane": "🤯", "crazy": "🤪", "shocked": "😱", "omg": "😱", "wow": "✨",
+    "dead": "💀", "died": "💀", "kill": "⚔️", "killed": "⚔️", "danger": "⚠️", "bad": "❌",
+    "win": "🏆", "winner": "🏆", "won": "🏆", "lose": "📉", "lost": "😢", "fail": "🤦",
+    "fight": "🥊", "hit": "💥", "punch": "👊", "boom": "💥", "bomb": "💣", "explode": "💥",
+    "game": "🎮", "gaming": "🎮", "pc": "💻", "phone": "📱", "bot": "🤖", "hack": "⚡",
+    "gun": "🔫", "sniper": "🎯", "shoot": "🎯", "shot": "🎯", "car": "🚗", "speed": "⚡", "run": "🏃",
+    "lol": "😂", "lmao": "🤣", "funny": "😂", "laugh": "😂", "cry": "😭", "sad": "😢", "love": "❤️",
+    "angry": "😡", "scary": "👻", "ghost": "👻", "smart": "🧠", "brain": "🧠", "think": "🤔", "idea": "💡",
+    "look": "👀", "see": "👀", "eyes": "👀", "stop": "🛑", "wait": "⏳", "time": "⏰", "music": "🎵"
+}
+
+
+def _progress_events(dur, color="00F0FF"):
+    """Animated progress bar gliding at the bottom of the vertical clip."""
+    dur_ms = int(dur * 1000)
+    track = "m 0 0 l 1000 0 l 1000 6 l 0 6"
+    return [
+        f"Dialogue: 0,0:00:00.00,{_ts(dur)},Progress,,0,0,0,,{{\\an7\\pos(40,1905)\\c&H222222&\\a&H44&\\p1}}{track}{{\\p0}}",
+        f"Dialogue: 0,0:00:00.00,{_ts(dur)},Progress,,0,0,0,,{{\\an7\\pos(40,1905)\\c&H{color}&\\fscx0\\t(0,{dur_ms},\\fscx100)\\p1}}{track}{{\\p0}}"
+    ]
+
+
+def build_ass(words, start, end, hook, style_name, highlight, hook_y, cap_y, progress_bar=True, emojis=True) -> str:
     st = STYLES.get(style_name, STYLES["bounce"])
     words = [dict(w, s=w["s"] - CAPTION_LEAD, e=w["e"] - CAPTION_LEAD) for w in words]
     strong = {_key(h) for h in highlight if _key(h)}
@@ -178,12 +202,15 @@ ScaledBorderAndShadow: yes
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Cap,{st['font']},{st['size']},&H00{st['base']},&H00{st['base']},&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,{st['outline']},0,5,0,0,0,1
 Style: Hook,{HOOK['font']},{HOOK['size']},&H00{HOOK['ink']},&H00{HOOK['ink']},&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,0,0,0,1
+Style: Progress,Arial,10,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     dur = end - start
     ev = _hook_events(_clean(hook), dur, hook_y)
+    if progress_bar:
+        ev.extend(_progress_events(dur, st.get("active", "00F0FF")))
     f = _Font.get(st["font"])
     inside = [dict(w, w=_clean(w["w"])) for w in words if w["s"] >= start - 0.05 and w["s"] < end]
     inside = sorted((w for w in inside if w["w"]), key=lambda w: w["s"])
@@ -198,6 +225,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         texts = []
         for x in g:
             t = re.sub(r"[.,;:]+$", "", x["w"])
+            k = _key(t)
+            if emojis and k in EMOJI_MAP:
+                t = f"{t} {EMOJI_MAP[k]}"
             texts.append(t.upper() if st["upper"] else t)
         if not all(roman.drawable(t) for t in texts):
             # A script the caption font cannot draw (Japanese, Thai, Chinese...): its words cannot be measured, so
@@ -353,11 +383,14 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
     pip_pos = clip.get("pip_pos", "top_right")
     hook = clip.get("hook", "")
     enhance = clip.get("enhance", "vibrant")
+    progress_bar = clip.get("progress_bar", True)
+    emojis = clip.get("emojis", True)
+    bgm = clip.get("bgm", "off")
     if layout == "gameplay" and not (face and len(face) == 4):
         layout = "crop"     # no webcam found: the game fills the screen, which is still the right shape
     hook_y = _hook_y(layout, hook_y, face, pip_pos)
     ass = build_ass(words if clip.get("captions", True) else [], start, end, hook, clip.get("style", "bounce"),
-                    clip.get("highlight_words", []), hook_y, cap_y)
+                    clip.get("highlight_words", []), hook_y, cap_y, progress_bar=progress_bar, emojis=emojis)
     # The clip is made in a short work folder and moved into place afterwards. The caption step of ffmpeg cannot
     # open files whose full path is longer than 260 characters on Windows, which a data folder deep inside other
     # folders easily reaches. Inside the work folder every name is short and relative (a drive colon would also
@@ -367,13 +400,15 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
         # The title and description are also written into the file itself, for any place that reads them from it.
         meta = {"title": clip.get("title") or "", "description": clip.get("description") or "", "comment": clip.get("description") or ""}
         return _render_in(work, src, out_dir, name, start, end, layout, fg_h, ass,
-                          face=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos, meta=meta, hook=hook, enhance=enhance)
+                          face=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos, meta=meta,
+                          hook=hook, enhance=enhance, bgm=bgm, progress_bar=progress_bar, emojis=emojis)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
 def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layout, fg_h, ass: str,
-               face=None, gameplay=None, split_mode="cam_top", pip_pos="top_right", meta=None, hook="", enhance="vibrant") -> dict:
+               face=None, gameplay=None, split_mode="cam_top", pip_pos="top_right", meta=None, hook="",
+               enhance="vibrant", bgm="off", progress_bar=True, emojis=True) -> dict:
     global _qsv_ok
     (work / f"{name}.ass").write_text(ass, encoding="utf-8")
     (work / "f").mkdir()
@@ -384,9 +419,21 @@ def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layo
         fc = _filter(layout, fg_h, facecam=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos) + f"[v0]{enh_filter}[ve];[ve]ass={name}.ass:fontsdir=f[v]"
     else:
         fc = _filter(layout, fg_h, facecam=face, gameplay=gameplay, split_mode=split_mode, pip_pos=pip_pos) + f"[v0]ass={name}.ass:fontsdir=f[v]"
-    base = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src),
-            "-filter_complex", fc, "-map", "[v]", "-map", "0:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
-            "-c:a", "aac", "-b:a", "160k", "-ar", "48000"]
+        
+    dur = end - start
+    base = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-t", f"{dur:.2f}", "-i", str(src)]
+    bgm_path = Path(__file__).resolve().parent / "audio" / "bgm" / f"{bgm}.wav" if (bgm and bgm != "off") else None
+    
+    if bgm_path and bgm_path.is_file():
+        base += ["-stream_loop", "-1", "-i", str(bgm_path)]
+        fc += (";[1:a]volume=0.18[bv];"
+               "[bv][0:a:0]sidechaincompress=threshold=0.08:ratio=6:attack=40:release=350[bd];"
+               "[0:a:0][bd]amix=inputs=2:duration=first[am];"
+               "[am]loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
+        base += ["-filter_complex", fc, "-map", "[v]", "-map", "[aout]", "-c:a", "aac", "-b:a", "160k", "-ar", "48000"]
+    else:
+        base += ["-filter_complex", fc, "-map", "[v]", "-map", "0:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
+                 "-c:a", "aac", "-b:a", "160k", "-ar", "48000"]
     for k, v in (meta or {}).items():
         if v:
             base += ["-metadata", f"{k}={v}"]
@@ -418,4 +465,5 @@ def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layo
         pass
     for ext in ("mp4", "jpg", "ass"):
         shutil.move(str(work / f"{name}.{ext}"), str(out_dir / f"{name}.{ext}"))
-    return {"file": f"{name}.mp4", "cover": f"{name}.jpg", "layout": layout, "enhance": enhance}
+    return {"file": f"{name}.mp4", "cover": f"{name}.jpg", "layout": layout, "enhance": enhance,
+            "bgm": bgm, "progress_bar": progress_bar, "emojis": emojis}
