@@ -396,9 +396,12 @@ def request_render(jid, cid, changes: dict):
                 new[k] = [int(round(float(v))) for v in changes[k]]
             except (ValueError, TypeError):
                 pass
-    for k in ("split_mode", "pip_pos", "enhance"):
+    for k in ("split_mode", "pip_pos", "enhance", "bgm"):
         if k in changes and changes[k]:
             new[k] = str(changes[k])[:20]
+    for k in ("progress_bar", "emojis"):
+        if k in changes:
+            new[k] = bool(changes[k])
     if "hashtags" in changes:
         new["hashtags"] = clean_hashtags(changes["hashtags"])
     if new.get("style") not in render.STYLES:
