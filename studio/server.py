@@ -36,7 +36,7 @@ def _quiet(fn):
         print(f"  {e}", flush=True)
 
 
-app = FastAPI(title="Clipper by Naresh Khurana", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="PeakCut", docs_url=None, redoc_url=None, openapi_url=None)
 WEB = config.ROOT / "web"
 OPEN = ("/api/auth/", "/pub/", "/api/public", "/auth/google/", "/auth/verify", "/brand/", "/assets/", "/healthz", "/favicon.ico", "/robots.txt", "/sitemap.xml")
 PAGES = {"/": "landing.html", "/login": "auth.html", "/signup": "auth.html", "/reset": "reset.html",
@@ -319,7 +319,7 @@ def _own_address(host: str) -> bool:
     import ipaddress
     name = host.strip().lower()
     name = name[1:name.index("]")] if name.startswith("[") and "]" in name else name.rsplit(":", 1)[0] if ":" in name else name
-    if name in ("localhost", urlparse(config.PUBLIC_URL).hostname or "") or name.endswith(".localhost") or name.endswith(".trycloudflare.com") or name.endswith(".onrender.com"):
+    if name in ("localhost", urlparse(config.PUBLIC_URL).hostname or "") or name.endswith(".localhost"):
         return True
     try:
         ipaddress.ip_address(name)
@@ -415,7 +415,7 @@ def legal_page(request: Request):
     contact = config.CONTACT_EMAIL
     who = (f'<a href="mailto:{_h.escape(contact)}">{_h.escape(contact)}</a>' if contact
            else "the contact details on our website")
-    name = _h.escape(config.LEGAL_NAME or "Clipper by Naresh Khurana")
+    name = _h.escape(config.LEGAL_NAME or "PeakCut")
     law = (f"the laws of {_h.escape(config.LEGAL_COUNTRY)}" if config.LEGAL_COUNTRY
            else "the laws of the country where PeakCut's operator is established")
     out = (_LEGAL_HTML or (WEB / "legal.html").read_text(encoding="utf-8"))
@@ -1049,6 +1049,36 @@ def clip_thumbnail(jid: str, cid: str, body: dict = Body({})):
     jobs.save(job)
     ctx.bump()
     return {"ok": True, "version": clip["version"], "cover": cover_file}
+
+
+@app.get("/api/jobs/{jid}/clips/{cid}/source-frame")
+def get_source_frame(jid: str, cid: str):
+    job, clip = _clip_or_404(jid, cid)
+    src = Path(clip["src"]) if clip.get("src") else (Path(job.get("dir", "")) / "source.mp4")
+    if not src.is_file():
+        src = Path(job.get("source_path", ""))
+    if not src.is_file():
+        candidates = list(Path(job.get("dir", "")).glob("*.mp4"))
+        if candidates:
+            src = candidates[0]
+    if not src.is_file():
+        raise HTTPException(404, "Source video file not found")
+
+    frame_name = f"{cid}_src_frame.jpg"
+    frame_path = Path(job["dir"]) / "clips" / frame_name
+    frame_path.parent.mkdir(parents=True, exist_ok=True)
+    if not frame_path.is_file():
+        start_t = max(0.0, float(clip.get("start", 0)) + 0.5)
+        cmd = ["ffmpeg", "-y", "-ss", f"{start_t:.2f}", "-i", str(src), "-frames:v", "1", "-q:v", "2", str(frame_path)]
+        try:
+            media.run(cmd)
+        except Exception as e:
+            raise HTTPException(500, f"Could not extract source frame: {e}")
+
+    if not frame_path.is_file():
+        raise HTTPException(500, "Source frame was not generated")
+    return FileResponse(frame_path, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=600"})
+
 
 
 @app.post("/api/jobs/{jid}/clips/{cid}/write")
@@ -1753,7 +1783,7 @@ def admin_delete_user(request: Request, uid: str, body: dict = Body(...)):
 
 
 def main():
-    print(f"\n  Clipper by Naresh Khurana is running:  {config.PUBLIC_URL}\n")
+    print(f"\n  PeakCut is running:  {config.PUBLIC_URL}\n")
     if not config.ACCOUNTS and (config.HTTPS or config.HOST not in ("127.0.0.1", "localhost", "::1")):
         print("  Sign-in is off, so anyone who can reach this address can use PeakCut and its AI key.\n"
               "  On a server other people can reach, set PEAKCUT_ACCOUNTS=1 in .env.\n", flush=True)
