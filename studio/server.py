@@ -1025,6 +1025,32 @@ def clip_text(jid: str, cid: str, body: dict = Body(...)):
     return jobs.public(job)
 
 
+@app.post("/api/jobs/{jid}/clips/{cid}/thumbnail")
+def clip_thumbnail(jid: str, cid: str, body: dict = Body({})):
+    job, clip = _clip_or_404(jid, cid)
+    if clip.get("status") != "done":
+        raise HTTPException(400, "That clip is not ready yet.")
+    headline = body.get("headline") or clip.get("title") or clip.get("hook") or "WAIT FOR IT"
+    badge = body.get("badge") or clip.get("hook") or "VIRAL"
+    time_offset = body.get("time_offset")
+    
+    from . import thumbnails
+    clip_path = Path(job["dir"]) / "clips" / clip["file"]
+    cover_file = clip.get("cover") or f"{cid}.jpg"
+    cover_path = Path(job["dir"]) / "clips" / cover_file
+    
+    try:
+        thumbnails.create_clip_thumbnail(clip_path, cover_path, headline=str(headline)[:60], badge=str(badge)[:30], time_offset=time_offset)
+    except Exception as e:
+        raise HTTPException(500, f"Could not create thumbnail: {e}")
+        
+    clip["version"] = int(clip.get("version", 1)) + 1
+    clip["cover"] = cover_file
+    jobs.save(job)
+    ctx.bump()
+    return {"ok": True, "version": clip["version"], "cover": cover_file}
+
+
 @app.post("/api/jobs/{jid}/clips/{cid}/write")
 def clip_write(jid: str, cid: str):
     """Ask the AI for a new title, description and hashtags for one clip. Returned to the page, not saved."""
