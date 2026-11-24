@@ -340,6 +340,11 @@ def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layo
     cover_t = min(1.2, (end - start) / 2)
     run(["ffmpeg", "-y", "-v", "error", "-ss", f"{cover_t:.2f}", "-i", f"{name}.mp4", "-frames:v", "1",
          "-q:v", "3", f"{name}.jpg"], cwd=work)
+    try:
+        from . import thumbnails
+        thumbnails.render_thumbnail(work / f"{name}.jpg", work / f"{name}.jpg", headline=hook or "WAIT FOR IT", badge="VIRAL")
+    except Exception:
+        pass
     for ext in ("mp4", "jpg", "ass"):
         shutil.move(str(work / f"{name}.{ext}"), str(out_dir / f"{name}.{ext}"))
     return {"file": f"{name}.mp4", "cover": f"{name}.jpg", "layout": layout}
